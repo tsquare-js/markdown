@@ -31,12 +31,14 @@ export function check(text: string, flows: boolean): Checked {
   return { ok: true, spec, width, height, alt: title ? `Wireframe: ${title}` : "Wireframe" };
 }
 
-// Rendered SVGs by text, so a dev server re-rendering a page after an edit only draws the boards that changed
-const cache = new Map<string, string>();
+// Renders by text, so a dev server re-rendering a page after an edit only draws the boards that changed.
+// The promise goes in as soon as a render starts: Docusaurus compiles its client and server bundles
+// at the same time, and caching only finished renders drew every board twice.
+const cache = new Map<string, Promise<string>>();
 const CACHE_SIZE = 200;
 
-/** The SVG of a checked board (from the cache when the same text was drawn before). */
-export async function render(text: string, spec: Spec, flows: boolean): Promise<string> {
+/** The SVG of a checked board (the same promise while the same text is being drawn, or was before). */
+export function render(text: string, spec: Spec, flows: boolean): Promise<string> {
   const key = (flows ? "1" : "0") + text;
   const hit = cache.get(key);
   if (hit !== undefined) {
@@ -44,8 +46,11 @@ export async function render(text: string, spec: Spec, flows: boolean): Promise<
     cache.set(key, hit);
     return hit;
   }
-  const svg = await renderWireframeSvg(spec, { skipValidation: true, flows });
+  const svg = renderWireframeSvg(spec, { skipValidation: true, flows });
   cache.set(key, svg);
+  svg.catch(() => {
+    if (cache.get(key) === svg) cache.delete(key); // a failed render is tried again next time
+  });
   if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value!);
   return svg;
 }
