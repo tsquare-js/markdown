@@ -66,6 +66,11 @@ export default function markdownItTsquare(md: MarkdownIt, options: Options = {})
   const zoom = options.zoom ?? "auto";
   const link = options.link ?? false;
   const fallback = md.renderer.rules.fence!;
+  // each render starts the page's count and styles afresh, even when a site passes the same env again
+  // (core rules run once per render, before any fence is rendered)
+  md.core.ruler.push("tsquare_page", (state) => {
+    if (typeof state.env === "object" && state.env !== null) pages.delete(state.env);
+  });
 
   md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
     const token = tokens[idx];

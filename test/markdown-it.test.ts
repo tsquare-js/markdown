@@ -74,6 +74,11 @@ test("zoom: \"auto\" for boards wider than a column, true, false; the styles onc
   const md = new MarkdownIt().use(markdownItTsquare);
   assert.equal((md.render(fence(signUpFlow), {}).match(/<link rel="stylesheet"/g) ?? []).length, 1);
   assert.equal((md.render(fence(signUpFlow), {}).match(/<link rel="stylesheet"/g) ?? []).length, 1);
+  // the same page rendered again with the same env (a rebuild): the same output, styles and ids included
+  const env = { path: "docs/a.md" };
+  const first = md.render(fence(signUpFlow) + "\n" + fence(signUpFlow), env);
+  assert.equal(md.render(fence(signUpFlow) + "\n" + fence(signUpFlow), env), first);
+  assert.equal((first.match(/<link rel="stylesheet"/g) ?? []).length, 1);
 });
 
 test("flows: false, and link", () => {
