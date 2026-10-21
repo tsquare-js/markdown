@@ -1,16 +1,14 @@
 // remark-tsquare's zoom and link: the markup (plain and MDX), the script MDX pages import, and that
 // script in a browser (jsdom: no ResizeObserver, setPointerCapture or <dialog> methods, so stubbed).
+// The script on the server is in ssr.test.ts, a process without these browser globals.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { after, before, test } from "node:test";
 import { pathToFileURL } from "node:url";
-import { compile, evaluate } from "@mdx-js/mdx";
+import { compile } from "@mdx-js/mdx";
 import type { Element, Root as HastRoot, RootContent } from "hast";
 import { JSDOM } from "jsdom";
-import { createElement } from "react";
-import * as runtime from "react/jsx-runtime";
-import { renderToStaticMarkup } from "react-dom/server";
 import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
@@ -104,15 +102,6 @@ test("MDX imports the script once, on pages with a board that zooms", async () =
   assert.equal(imports(await code("import x from './x.js'\n\n" + fence(signUpFlow))), 1, "next to the page's own imports");
 });
 
-test("MDX renders on the server with the script imported (it waits for a browser), popover attributes intact", async () => {
-  // what Docusaurus does: the page module, imports and all, runs in Node to render HTML
-  const { default: Content } = await evaluate(fence(signUpFlow), { ...runtime, baseUrl: import.meta.url, remarkPlugins: [remarkTsquare] } as any);
-  const html = renderToStaticMarkup(createElement(Content));
-  assert.match(html, /<div popover="auto" id="(tsquare-[0-9a-z]+-0)" class="tsquare-zoom"><button type="button" class="tsquare-open" popoverTarget="\1"/i);
-  assert.match(html, /popoverTargetAction="hide"/i);
-  assert.match(html, /<style>\.tsquare-zoom:not\(:popover-open\)/);
-});
-
 // The script, in a browser page made from the plugin's HTML
 const dom = new JSDOM("<!doctype html><html><head></head><body></body></html>");
 before(() => {
@@ -153,12 +142,50 @@ test("the script opens a board in the viewer instead of the plain full-size view
   assert.deepEqual(buttons(), ["All", "Create account", "Verify email", "Welcome"]);
   assert.equal(doc.querySelectorAll(".tsquare-viewer-stage img").length, 1);
 
-  // a docs site swapping in another page: the same listener and dialog serve it
+  // a docs site swapping in another page while keeping the body (Docusaurus): the same dialog serves it
   (dialogs[0] as HTMLDialogElement).close();
-  doc.body.innerHTML = await toHtml(fence(example("dashboard")));
-  doc.body.append(dialogs[0]);
+  doc.querySelector("figure")!.outerHTML = await toHtml(fence(example("dashboard")));
   assert.equal(click(doc.querySelector(".tsquare-open")!), true);
   assert.equal(doc.querySelectorAll("dialog.tsquare-viewer").length, 1);
+  assert.equal(doc.querySelector("dialog.tsquare-viewer"), dialogs[0]);
   assert.equal(dialogs[0].getAttribute("aria-label"), "Wireframe: Analytics");
   assert.deepEqual(buttons(), [], "one screen: no screen buttons");
+
+  // one replacing the whole body and head (Astro's client router): the viewer and its styles are made again
+  (dialogs[0] as HTMLDialogElement).close();
+  doc.head.innerHTML = "";
+  doc.body.innerHTML = await toHtml(fence(signUpFlow));
+  assert.equal(click(doc.querySelector(".tsquare-open")!), true);
+  const dialog = doc.querySelector("dialog.tsquare-viewer")!;
+  assert.ok(dialog.isConnected && dialog.hasAttribute("open"));
+  assert.notEqual(dialog, dialogs[0]);
+  assert.equal(doc.querySelectorAll("#tsquare-viewer-styles").length, 1);
+  assert.deepEqual(buttons(), ["All", "Create account", "Verify email", "Welcome"]);
+  (dialog as HTMLDialogElement).close();
+  assert.equal(click(doc.querySelector(".tsquare-open")!), true);
+  assert.equal(doc.querySelectorAll("#tsquare-viewer-styles").length, 1, "styles added once");
+  (dialog as HTMLDialogElement).close();
+});
+
+test("the script works in browsers with <dialog> but no popovers (2022-2023), where :popover-open doesn't parse", async () => {
+  const doc = dom.window.document;
+  const E = dom.window.Element.prototype;
+  const H = dom.window.HTMLElement.prototype as any;
+  const { matches } = E;
+  const hidePopover = H.hidePopover;
+  E.matches = function (this: globalThis.Element, selector: string) {
+    if (selector.includes(":popover-open")) throw new dom.window.DOMException(`'${selector}' is not a valid selector`, "SyntaxError");
+    return matches.call(this, selector);
+  };
+  delete H.hidePopover;
+  try {
+    doc.body.innerHTML = await toHtml(fence(signUpFlow));
+    const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true });
+    doc.querySelector(".tsquare-open")!.dispatchEvent(event);
+    assert.ok(event.defaultPrevented);
+    assert.ok(doc.querySelector("dialog.tsquare-viewer")?.hasAttribute("open"), "the viewer opens");
+  } finally {
+    E.matches = matches;
+    if (hidePopover) H.hidePopover = hidePopover;
+  }
 });

@@ -19,6 +19,7 @@ const STYLES = `.tsquare-viewer{width:100vw;height:100dvh;max-width:none;max-hei
 @media (prefers-reduced-motion:reduce){.tsquare-viewer-stage.animate>*{transition:none}}`;
 
 const SVG_URL = "data:image/svg+xml,";
+const STYLE_ID = "tsquare-viewer-styles";
 
 let dialog: HTMLDialogElement | null = null;
 let viewer: Viewer | null = null;
@@ -36,14 +37,19 @@ export function install() {
     const img = figure?.querySelector("img");
     if (!figure || !img?.src.startsWith(SVG_URL)) return;
     event.preventDefault(); // the viewer instead of the plain full-size view
+    // opened before the script loaded; browsers without popovers throw on the selector
     const zoom = figure.querySelector<HTMLElement>(".tsquare-zoom");
-    if (zoom?.matches?.(":popover-open")) zoom.hidePopover();
+    if (zoom && typeof zoom.hidePopover === "function" && zoom.matches(":popover-open")) zoom.hidePopover();
     show(img, JSON.parse(figure.getAttribute("data-tsquare-screens") ?? "[]"));
   });
 }
 
 function show(img: HTMLImageElement, screens: { name: string; x: number; y: number; width: number; height: number }[]) {
-  if (!dialog) dialog = build();
+  // made again when navigation replaced the page's body (Astro's client router, for one)
+  if (!dialog?.isConnected) {
+    viewer?.destroy();
+    dialog = build();
+  }
   dialog.setAttribute("aria-label", img.alt || "Wireframe");
   dialog.showModal();
   const svg = decodeURIComponent(img.src.slice(SVG_URL.length));
@@ -54,9 +60,12 @@ function show(img: HTMLImageElement, screens: { name: string; x: number; y: numb
 }
 
 function build() {
-  const style = document.createElement("style");
-  style.textContent = STYLES;
-  document.head.append(style);
+  if (!document.getElementById(STYLE_ID)) {
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = STYLES;
+    document.head.append(style);
+  }
   const el = document.createElement("dialog");
   el.className = "tsquare-viewer";
   el.innerHTML = `<div class="tsquare-viewer-bar">
