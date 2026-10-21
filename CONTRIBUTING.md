@@ -16,7 +16,7 @@ npm test          # the plugins through remark-rehype and MDX, the READMEs, the 
 npm run typecheck
 ```
 
-Before a release, try real sites too: remark-tsquare has been checked in Docusaurus 3.10 and Astro 7.3 (`.md` and `.mdx` pages), markdown-it-tsquare in VitePress 1.6 and Eleventy 3.1 (ESM and CommonJS configs), each by installing the packed tarball (`npm pack -w <package>`). For zoom, check a wide board is visible and opens on first load and after moving to another page inside the site (the viewer, with the script; the full-size popover, without it). Look at it, don't only click it from a script: a script can click a hidden element, which is how invisible boards on VitePress went unnoticed once. Restart a static preview server after rebuilding (VitePress's indexes its files at startup). Touch can't be tested from a desktop browser's phone mode: try a phone.
+Before a release, try real sites too: remark-tsquare has been checked in Docusaurus 3.10 and Astro 7.3 (`.md` and `.mdx` pages), markdown-it-tsquare in VitePress 1.6 and Eleventy 3.1 (ESM and CommonJS configs), each by installing the packed tarball (`npm pack -w <package>`). For zoom, check a wide board is visible and opens on first load and after moving to another page inside the site (the viewer, with the script; the full-size popover, without it). Look at it, don't only click it from a script: a script can click a hidden element, which is how invisible boards on VitePress went unnoticed once. Restart a static preview server after rebuilding (VitePress's preview server indexes its files when it starts). Touch can't be tested from a desktop browser's phone mode: try a phone.
 
 ## Release
 
