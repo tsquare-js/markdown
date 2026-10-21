@@ -39,7 +39,7 @@
   "sideEffects": false,
   "dependencies": {
     "@types/mdast": "^4.0.4",
-    "tsquare": "^0.12.1",
+    "tsquare": "^0.12.2",
     "vfile": "^6.0.3"
   },
   "engines": {
