@@ -1,0 +1,48 @@
+{
+  "name": "remark-tsquare",
+  "version": "0.1.0",
+  "description": "remark plugin that turns ```tsquare code blocks into wireframe images at build time: Docusaurus, Astro, Next.js with MDX, anything on unified.",
+  "keywords": [
+    "remark",
+    "remark-plugin",
+    "unified",
+    "mdx",
+    "docusaurus",
+    "astro",
+    "tsquare",
+    "wireframe",
+    "markdown"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsquare-js/markdown.git",
+    "directory": "packages/remark-tsquare"
+  },
+  "homepage": "https://github.com/tsquare-js/markdown/tree/main/packages/remark-tsquare#readme",
+  "bugs": {
+    "url": "https://github.com/tsquare-js/markdown/issues"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@types/mdast": "^4.0.4",
+    "tsquare": "^0.12.1",
+    "vfile": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
