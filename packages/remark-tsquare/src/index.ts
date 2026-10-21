@@ -14,25 +14,11 @@
  * The replacement is an mdast node that says which HTML to become (data.hName/hProperties/hChildren),
  * not raw HTML: MDX rejects raw HTML nodes, and both paths through remark-rehype understand this.
  */
-import type { Element, ElementContent } from "hast";
+import type { Element } from "hast";
 import type { Code, Parent, Root, RootContent } from "mdast";
 import type { VFile } from "vfile";
-import {
-  boardId,
-  check,
-  EXPAND_ICON_PATH,
-  IMG_STYLE,
-  playgroundLink,
-  LANG,
-  problemsHeading,
-  problemText,
-  render,
-  renderFailure,
-  svgDataUrl,
-  ZOOM_CSS,
-  zoomable,
-  type Problem,
-} from "../../../shared/board.js";
+import { boardId, check, LANG, playgroundLink, render, renderFailure, svgDataUrl, zoomable, type Problem } from "../../../shared/board.js";
+import { boardElement, logLine, problemsElement, zoomStyleElement } from "../../../shared/markup.js";
 
 export interface Options {
   /** Draw flow arrows between screens. Default true. */
@@ -73,24 +59,9 @@ export default function remarkTsquare(this: { data(key: string): unknown } | voi
         if (checked.ok) {
           try {
             const svg = await render(text, checked.spec, flows);
-            const img = h("img", { src: svgDataUrl(svg), alt: checked.alt, width: checked.width, height: checked.height, style: IMG_STYLE });
-            const href = playgroundLink(text, link);
-            const caption = href
-              ? [h("figcaption", { className: ["tsquare-caption"] }, [h("a", { className: ["tsquare-link"], href, target: "_blank", rel: ["noopener"] }, [{ type: "text", value: "Open in playground" }])])]
-              : [];
-            if (zoomable(checked.width, zoom)) {
-              zooms++;
-              const id = boardId(text, n);
-              replacement = h("figure", { className: ["tsquare-board"], dataTsquareScreens: JSON.stringify(checked.screens) }, [
-                h("div", { popover: "auto", id, className: ["tsquare-zoom"] }, [
-                  h("button", { type: "button", className: ["tsquare-open"], popoverTarget: id, ariaLabel: `Show ${checked.alt.toLowerCase()} at full size` }, [img, badge()]),
-                  h("button", { type: "button", className: ["tsquare-close"], popoverTarget: id, popoverTargetAction: "hide" }, [{ type: "text", value: "Close" }]),
-                ]),
-                ...caption,
-              ]);
-            } else {
-              replacement = h("figure", { className: ["tsquare-board"] }, [img, ...caption]);
-            }
+            const zoomId = zoomable(checked.width, zoom) ? boardId(text, n) : null;
+            if (zoomId) zooms++;
+            replacement = boardElement({ ...checked, src: svgDataUrl(svg), zoomId, href: playgroundLink(text, link) });
           } catch (err) {
             replacement = report(file, node, [renderFailure(err)], strict);
           }
@@ -101,7 +72,7 @@ export default function remarkTsquare(this: { data(key: string): unknown } | voi
       }),
     );
     if (zooms) {
-      tree.children.push(asMdast(h("style", {}, [{ type: "text", value: ZOOM_CSS }])));
+      tree.children.push(asMdast(zoomStyleElement()));
       if (mdx) tree.children.unshift(importClient());
     }
   };
@@ -128,11 +99,6 @@ function importClient(): RootContent {
   } as unknown as RootContent;
 }
 
-function badge(): Element {
-  const path = h("path", { d: EXPAND_ICON_PATH, fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" });
-  return h("span", { className: ["tsquare-badge"], ariaHidden: "true" }, [h("svg", { viewBox: "0 0 24 24", width: 14, height: 14 }, [path])]);
-}
-
 function collect(node: Root | RootContent, out: { node: Code; parent: Parent; index: number }[]) {
   if (!("children" in node)) return;
   node.children.forEach((child, index) => {
@@ -153,16 +119,9 @@ function report(file: VFile, node: Code, problems: Problem[], strict: boolean): 
   for (const p of problems) {
     const message = file.message(`tsquare: ${p.message}`, { place: where(p), ruleId: "invalid-wireframe", source: "remark-tsquare" });
     // also in the build log: Docusaurus and Astro don't print a file's messages
-    console.warn(`${file.path ?? "Markdown"}:${message.line ?? "?"}:${message.column ?? "?"}: ${message.reason}`);
+    console.warn(logLine(file.path, message.line, message.column, p.message));
   }
-  return h("div", { className: ["tsquare-problems"], role: "note" }, [
-    h("strong", {}, [{ type: "text", value: problemsHeading(problems) }]),
-    h("ul", {}, problems.map((p) => h("li", {}, [{ type: "text", value: problemText(p) }]))),
-  ]);
-}
-
-function h(tagName: string, properties: Element["properties"], children: ElementContent[] = []): Element {
-  return { type: "element", tagName, properties, children };
+  return problemsElement(problems);
 }
 
 /** An mdast node that remark-rehype (and MDX) turns into the given element, in place of the code block. */

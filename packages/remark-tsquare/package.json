@@ -34,7 +34,8 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js",
       "default": "./dist/client.js"
-    }
+    },
+    "./client.standalone.js": "./dist/client.standalone.js"
   },
   "files": [
     "dist/",
@@ -42,7 +43,8 @@
     "README.md"
   ],
   "sideEffects": [
-    "./dist/client.js"
+    "./dist/client.js",
+    "./dist/client.standalone.js"
   ],
   "dependencies": {
     "@types/mdast": "^4.0.4",
