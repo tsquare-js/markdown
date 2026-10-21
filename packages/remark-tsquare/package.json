@@ -29,6 +29,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
     }
   },
   "files": [
@@ -36,7 +41,9 @@
     "LICENSE",
     "README.md"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/client.js"
+  ],
   "dependencies": {
     "@types/mdast": "^4.0.4",
     "tsquare": "^0.12.2",

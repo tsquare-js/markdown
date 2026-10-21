@@ -13,14 +13,24 @@ for (const name of packages) {
 
   test(`${name}: the tarball has the build, README and LICENSE, nothing else`, () => {
     const [packed] = JSON.parse(execFileSync("npm", ["pack", "--dry-run", "--json", "-w", name], { encoding: "utf8" }));
-    assert.deepEqual(packed.files.map((f: { path: string }) => f.path).sort(), ["LICENSE", "README.md", "dist/index.d.ts", "dist/index.js", "package.json"]);
+    const build = ["dist/client.d.ts", "dist/client.js", "dist/index.d.ts", "dist/index.js"];
+    assert.deepEqual(packed.files.map((f: { path: string }) => f.path).sort(), ["LICENSE", "README.md", ...build, "package.json"]);
+    for (const [entry, target] of Object.entries<{ import: string; types: string }>(pkg.exports)) {
+      assert.ok(build.includes(target.import.slice(2)) && build.includes(target.types.slice(2)), entry);
+    }
     assert.equal(readFileSync(`${dir}/LICENSE`, "utf8"), readFileSync("LICENSE", "utf8"));
   });
 
   test(`${name}: the build imports only its dependencies and Node, with the shared code bundled in`, () => {
-    const js = readFileSync(`${dir}/dist/index.js`, "utf8");
-    const imports = [...js.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-    for (const spec of imports) assert.ok(spec.startsWith("node:") || spec in pkg.dependencies, `${name} imports ${spec}`);
+    const packageName = (spec: string) => spec.split("/").slice(0, spec.startsWith("@") ? 2 : 1).join("/");
+    for (const file of ["index.js", "client.js"]) {
+      const js = readFileSync(`${dir}/dist/${file}`, "utf8");
+      const imports = [...js.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
+      for (const spec of imports) assert.ok(spec.startsWith("node:") || packageName(spec) in pkg.dependencies, `${name}/${file} imports ${spec}`);
+    }
+    // the zoom script runs in the reader's browser: nothing from Node, and only the viewer from tsquare
+    const client = readFileSync(`${dir}/dist/client.js`, "utf8");
+    assert.deepEqual([...client.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]), ["tsquare/viewer"]);
     const types = readFileSync(`${dir}/dist/index.d.ts`, "utf8");
     // a types-only package (mdast) comes from its @types/ package
     for (const [, spec] of types.matchAll(/from "([^"]+)"/g)) assert.ok(spec in pkg.dependencies || `@types/${spec}` in pkg.dependencies, `${name}'s types import ${spec}`);
