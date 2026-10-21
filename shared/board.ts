@@ -107,21 +107,28 @@ export const ZOOM_AUTO_WIDTH = 800;
 export const EXPAND_ICON_PATH = "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7";
 
 /**
- * The full-size view without a script: the board's wrapper is a popover, styled to sit in the page
- * until it's opened. Opened, it covers the window with the board at its real size (scroll around it;
- * Esc, Close or a click on the board closes it). Browsers without popovers show the plain board.
- * One copy per page.
+ * The full-size view without a script: the board's wrapper is a popover that sits in the page until
+ * it's opened. Opened, it covers the window with the board at its real size (scroll around it; Esc,
+ * Close or a click on the board closes it). Browsers without popovers show the plain board.
+ *
+ * How it looks closed is in inline styles (ZOOM_INLINE), so the board shows even where a page's
+ * <style> doesn't survive: Vue drops it from VitePress pages a reader navigates to, and the browser's
+ * own rule hides a closed popover. The stylesheet (ZOOM_CSS, once per page) only does the opened
+ * view, with !important to beat the inline styles.
  */
-export const ZOOM_CSS = `.tsquare-zoom:not(:popover-open){display:block;position:static;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;overflow:visible;background:none;color:inherit}
-.tsquare-zoom:popover-open{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;padding:calc(56px + env(safe-area-inset-top,0px)) 16px 16px;box-sizing:border-box;overflow:auto;background:rgba(18,22,30,.94)}
-.tsquare-open{display:block;position:relative;width:100%;margin:0;padding:0;border:0;background:none;font:inherit;text-align:left;cursor:zoom-in}
+export const ZOOM_INLINE = {
+  wrapper: "display:block;position:static;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;overflow:visible;background:none;color:inherit",
+  open: "display:block;position:relative;width:100%;margin:0;padding:0;border:0;background:none;font:inherit;text-align:left;cursor:zoom-in",
+  badge: "position:absolute;right:8px;bottom:8px;display:grid;place-items:center;width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.92);color:#172033;box-shadow:0 1px 3px rgba(0,0,0,.25)",
+  close: "display:none",
+};
+
+export const ZOOM_CSS = `.tsquare-zoom:popover-open{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;max-width:none;max-height:none;margin:0!important;border:0;padding:calc(56px + env(safe-area-inset-top,0px)) 16px 16px!important;box-sizing:border-box;overflow:auto!important;background:rgba(18,22,30,.94)!important}
 .tsquare-open:focus-visible{outline:3px solid #2563c9;outline-offset:3px}
-.tsquare-zoom:popover-open .tsquare-open{width:auto;cursor:zoom-out}
+.tsquare-zoom:popover-open .tsquare-open{width:auto!important;cursor:zoom-out!important}
 .tsquare-zoom:popover-open .tsquare-open img{max-width:none!important;margin:0 auto}
-.tsquare-badge{position:absolute;right:8px;bottom:8px;display:grid;place-items:center;width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.92);color:#172033;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.tsquare-zoom:popover-open .tsquare-badge{display:none}
-.tsquare-close{display:none;position:fixed;z-index:1;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));font:600 14px system-ui,sans-serif;color:#172033;background:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.tsquare-zoom:popover-open .tsquare-close{display:block}
+.tsquare-zoom:popover-open .tsquare-badge{display:none!important}
+.tsquare-zoom:popover-open .tsquare-close{display:block!important;position:fixed;z-index:1;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));font:600 14px system-ui,sans-serif;color:#172033;background:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 html:has(.tsquare-zoom:popover-open){overflow:hidden}`;
 
 /** A short id from the text, so each board's popover has its own (with the board's place on the page). */

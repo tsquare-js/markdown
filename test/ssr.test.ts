@@ -21,9 +21,9 @@ test("MDX renders on the server with the script imported (it waits for a browser
   // what Docusaurus does: the page module, imports and all, runs in Node to render HTML
   const { default: Content } = await evaluate("```tsquare\n" + signUpFlow + "```\n", { ...runtime, baseUrl: import.meta.url, remarkPlugins: [remarkTsquare] } as any);
   const html = renderToStaticMarkup(createElement(Content));
-  assert.match(html, /<div popover="auto" id="(tsquare-[0-9a-z]+-0)" class="tsquare-zoom"><button type="button" class="tsquare-open" popoverTarget="\1"/i);
+  assert.match(html, /<div popover="auto" id="(tsquare-[0-9a-z]+-0)" class="tsquare-zoom" style="display:block;[^"]*"><button type="button" class="tsquare-open" popoverTarget="\1"/i);
   assert.match(html, /popoverTargetAction="hide"/i);
-  assert.match(html, /<style>\.tsquare-zoom:not\(:popover-open\)/);
+  assert.match(html, /<style>\.tsquare-zoom:popover-open\{/);
 });
 
 test("the script does nothing on the server, imported or installed", async () => {

@@ -89,8 +89,22 @@ test("plain Markdown doesn't get the script's import (it can't import), and its 
   const html = await toHtml(fence(signUpFlow));
   assert.doesNotMatch(html, /remark-tsquare\/client|<div><\/div>/);
   assert.match(html, /^<figure class="tsquare-board" data-tsquare-screens="\[\{&#x22;name&#x22;:&#x22;Create account&#x22;/);
-  assert.match(html, /<div popover="auto" id="tsquare-[0-9a-z]+-0" class="tsquare-zoom"><button type="button" class="tsquare-open" popovertarget="tsquare-/);
-  assert.match(html, /<style>\.tsquare-zoom:not\(:popover-open\)/);
+  assert.match(html, /<div popover="auto" id="tsquare-[0-9a-z]+-0" class="tsquare-zoom" style="display:block;[^"]*"><button type="button" class="tsquare-open" popovertarget="tsquare-/);
+  assert.match(html, /<style>\.tsquare-zoom:popover-open\{/);
+});
+
+test("a board shows without the page's <style> (Vue drops it from VitePress pages a reader navigates to)", async () => {
+  const tree = await toHast(fence(signUpFlow));
+  const style = (name: string) => String(byClass(tree, name)[0].properties.style);
+  // the browser's own rule hides a closed popover; the inline display wins over it
+  assert.match(style("tsquare-zoom"), /^display:block;position:static;/);
+  assert.match(style("tsquare-open"), /^display:block;/);
+  assert.match(style("tsquare-badge"), /position:absolute;/);
+  assert.equal(style("tsquare-close"), "display:none");
+  // the stylesheet is only for the opened view, and overrides those inline styles
+  const css = String((byTag(tree, "style")[0].children[0] as { value: string }).value);
+  for (const rule of css.split("\n")) assert.match(rule, /^(\.tsquare-zoom:popover-open|html:has\(\.tsquare-zoom:popover-open\)|\.tsquare-open:focus-visible)/, rule);
+  assert.match(css, /\.tsquare-zoom:popover-open\{position:fixed!important;/);
 });
 
 test("MDX imports the script once, on pages with a board that zooms", async () => {

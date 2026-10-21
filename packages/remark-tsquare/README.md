@@ -14,7 +14,7 @@ board "Sign in"
 
 Each block becomes the board as an image, drawn on the machine that builds the site and placed inside the page: nothing is sent anywhere. Readers can open a wide board at full size, or in a viewer with zoom and pan (see [Zoom](#zoom)).
 
-Works with Docusaurus, Astro, MDX and anything else built on [unified](https://unifiedjs.com). For VitePress and other markdown-it sites, use `markdown-it-tsquare` (coming soon).
+Works with Docusaurus, Astro, MDX and anything else built on [unified](https://unifiedjs.com). For VitePress, Eleventy and other markdown-it sites, use [`markdown-it-tsquare`](https://github.com/tsquare-js/markdown/tree/main/packages/markdown-it-tsquare#readme).
 
 ## Install
 
@@ -93,7 +93,7 @@ const html = String(
 );
 ```
 
-With MDX (`@mdx-js/mdx`), pass it in `remarkPlugins`; pages with a board that zooms import `remark-tsquare/client` for the viewer, so your bundler needs to resolve it. The plugin is async, so use `process` or `run`, not their `Sync` versions. For HTML you serve yourself, add `import "remark-tsquare/client"` to the page's JavaScript for the viewer.
+With MDX (`@mdx-js/mdx`), pass it in `remarkPlugins`; pages with a board that zooms import `remark-tsquare/client` for the viewer, so your bundler needs to resolve it. The plugin is async, so use `process` or `run`, not their `Sync` versions. For HTML you serve yourself, add `import "remark-tsquare/client"` to the page's JavaScript for the viewer, or, without a bundler, copy `node_modules/remark-tsquare/dist/client.standalone.js` (the same script with the viewer built in) into your site and load it with `<script type="module" src="…">`.
 
 ## Options
 
@@ -129,7 +129,7 @@ A board:
 
 The image is the board's SVG, inside the page itself. Its `width` and `height` keep the page from jumping while it loads, and the inline style shrinks a wide board to fit your column. The alt text comes from the board's title.
 
-A board that zooms wraps the same image in a button inside a popover, lists its screens for the viewer, and the page gets one `<style>` for the full-size view:
+A board that zooms wraps the same image in a button inside a popover, lists its screens for the viewer, and the page gets one `<style>` for the full-size view. How it looks in the page is in inline styles (left out below), so it shows even where a site drops that `<style>`:
 
 ```html
 <figure class="tsquare-board" data-tsquare-screens="[…]">

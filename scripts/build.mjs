@@ -1,5 +1,5 @@
 // Builds each package's dist/: index.js (ESM, the shared code bundled in, dependencies left as
-// imports) and index.d.ts. The shared code lives outside the packages, so its declarations are
+// imports) and index.d.ts, client.js (the zoom script) and, where there is one, worker.js. The shared code lives outside the packages, so its declarations are
 // emitted to a temporary folder and only the package's own index.d.ts is kept; the build fails if
 // that file still points at anything outside the package.
 import { execFileSync } from "node:child_process";
@@ -15,16 +15,20 @@ try {
   for (const name of packages) {
     const dir = join("packages", name);
     rmSync(join(dir, "dist"), { recursive: true, force: true });
-    await build({
-      entryPoints: [join(dir, "src/index.ts")],
-      outfile: join(dir, "dist/index.js"),
-      bundle: true,
-      format: "esm",
-      platform: "node",
-      target: "node20",
-      packages: "external",
-      logLevel: "warning",
-    });
+    // index.js and, for markdown-it's synchronous render, the worker that draws boards
+    for (const entry of ["index", "worker"]) {
+      if (!existsSync(join(dir, `src/${entry}.ts`))) continue;
+      await build({
+        entryPoints: [join(dir, `src/${entry}.ts`)],
+        outfile: join(dir, `dist/${entry}.js`),
+        bundle: true,
+        format: "esm",
+        platform: "node",
+        target: "node20",
+        packages: "external",
+        logLevel: "warning",
+      });
+    }
     // the zoom script, for the reader's browser; tsquare/viewer stays an import for the site's bundler
     if (existsSync(join(dir, "src/client.ts"))) {
       await build({
@@ -35,6 +39,18 @@ try {
         platform: "browser",
         target: "es2020",
         packages: "external",
+        logLevel: "warning",
+      });
+      // the same with the viewer bundled in, for a plain <script type="module"> (sites without a bundler)
+      await build({
+        entryPoints: [join(dir, "src/client.ts")],
+        outfile: join(dir, "dist/client.standalone.js"),
+        bundle: true,
+        minify: true,
+        format: "esm",
+        platform: "browser",
+        target: "es2020",
+        legalComments: "eof",
         logLevel: "warning",
       });
     }
