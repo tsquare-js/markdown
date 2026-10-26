@@ -2,6 +2,10 @@
 
 The packages in this repo share one version number and are released together.
 
+## 0.1.1
+
+- **Works with tsquare 0.13** as well as 0.12 (from 0.12.2). A site that installs tsquare 0.13 now shares one copy with the plugins instead of getting a second one. Nothing else changed; the tests pass on both 0.12.2 and 0.13.0.
+
 ## 0.1.0
 
 The first release: two plugins that turn ```` ```tsquare ```` code blocks into wireframe images when a site is built. They make the same HTML and take the same options. Node 20 or newer; they use `tsquare` 0.12.2 or later in 0.12.
