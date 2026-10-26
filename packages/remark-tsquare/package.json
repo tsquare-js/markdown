@@ -1,6 +1,6 @@
 {
   "name": "remark-tsquare",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "remark plugin that turns ```tsquare code blocks into wireframe images at build time: Docusaurus, Astro, Next.js with MDX, anything on unified.",
   "keywords": [
     "remark",
@@ -48,7 +48,7 @@
   ],
   "dependencies": {
     "@types/mdast": "^4.0.4",
-    "tsquare": "^0.12.2",
+    "tsquare": "^0.12.2 || ^0.13.0",
     "vfile": "^6.0.3"
   },
   "engines": {
