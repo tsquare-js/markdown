@@ -54,14 +54,14 @@ export default function remarkTsquare(this: { data(key: string): unknown } | voi
     await Promise.all(
       blocks.map(async ({ node, parent, index }, n) => {
         const text = node.value;
-        const checked = check(text, flows);
+        const checked = check(text);
         let replacement: Element;
         if (checked.ok) {
           try {
-            const svg = await render(text, checked.spec, flows);
-            const zoomId = zoomable(checked.width, zoom) ? boardId(text, n) : null;
+            const drawn = await render(text, checked.spec, flows);
+            const zoomId = zoomable(drawn.width, zoom) ? boardId(text, n) : null;
             if (zoomId) zooms++;
-            replacement = boardElement({ ...checked, src: svgDataUrl(svg), zoomId, href: playgroundLink(text, link) });
+            replacement = boardElement({ alt: checked.alt, width: drawn.width, height: drawn.height, screens: drawn.screens, src: svgDataUrl(drawn.svg), zoomId, href: playgroundLink(text, link) });
           } catch (err) {
             replacement = report(file, node, [renderFailure(err)], strict);
           }

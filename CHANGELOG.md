@@ -2,6 +2,11 @@
 
 The packages in this repo share one version number and are released together.
 
+## 0.2.0
+
+- **Needs tsquare 0.13.2 or later** (it was 0.12.2). Boards get tsquare's renderer fixes from 0.12.3 to 0.13.2.
+- **A board's image size and its zoom view's screen buttons are exact** on boards with notes: they come from tsquare's `measureBoardLayout`, which measures notes as drawn, next to the SVG (in markdown-it-tsquare's worker). `boardLayout`'s estimate could be a line or more off for a note that wraps differently than its length suggests, so the image was scaled into a slightly wrong box.
+
 ## 0.1.1
 
 - **Works with tsquare 0.13** as well as 0.12 (from 0.12.2). A site that installs tsquare 0.13 now shares one copy with the plugins instead of getting a second one. Nothing else changed; the tests pass on both 0.12.2 and 0.13.0.

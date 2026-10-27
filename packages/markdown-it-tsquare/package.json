@@ -1,6 +1,6 @@
 {
   "name": "markdown-it-tsquare",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "markdown-it plugin that turns ```tsquare code blocks into wireframe images at build time: VitePress, Eleventy, anything on markdown-it.",
   "keywords": [
     "markdown-it",
@@ -48,7 +48,7 @@
     "@types/markdown-it": "^14.1.2",
     "hast-util-to-html": "^9.0.5",
     "synckit": "^0.11.13",
-    "tsquare": "^0.12.2 || ^0.13.0"
+    "tsquare": "^0.13.2"
   },
   "engines": {
     "node": ">=20"
