@@ -51,6 +51,19 @@ test("the same HTML as remark-tsquare, board for board", async () => {
   assert.equal(decodeURIComponent(href), css);
 });
 
+test("a board with notes gets the size it's drawn at, from both plugins (tsquare-js/tsquare#44)", async () => {
+  // a notes-only row in a grid: tsquare's boardLayout estimates note heights; drawing measures them
+  const wide = "WARNING: MANDATORY REVIEW WINDOW MUST MATCH WORKFLOW WWW MMM QA APPROVAL ".repeat(3).trim();
+  const notes = ['board "Notes" layout=grid columns=2', '  screen phone "Top"', `  note "${wide}"`, `  note "${wide}"`, '  note "Short"', '  screen phone "Below"'].join("\n");
+  const html = render(fence(notes), { zoom: true });
+  const figure = figures(html)[0]!;
+  const [, w, h] = svgOf(figure).match(/^<svg width="(\d+)" height="(\d+)"/)!;
+  assert.match(figure, new RegExp(`width="${w}" height="${h}"`));
+  assert.notEqual(Number(h), boardLayout(compileWireframe(notes).spec!).height, "the estimate is off for this board");
+  const viaRemark = String(await unified().use(remarkParse).use(remarkTsquare, { zoom: true }).use(remarkRehype).use(rehypeStringify).process(fence(notes)));
+  assert.deepEqual(figures(viaRemark), figures(html));
+});
+
 test("other code blocks keep the site's own rendering (a highlighter, here)", () => {
   const md = new MarkdownIt({ highlight: (code, lang) => `<pre class="hl-${lang}"><code>${code}</code></pre>` }).use(markdownItTsquare);
   const html = md.render(fence("const x = 1", "js") + fence(signIn) + "```\nplain\n```\n");

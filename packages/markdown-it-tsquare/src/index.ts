@@ -12,7 +12,7 @@ import { toHtml } from "hast-util-to-html";
 import type MarkdownIt from "markdown-it";
 import { createSyncFn } from "synckit";
 import type { CompileResult } from "tsquare";
-import { boardId, check, LANG, playgroundLink, renderFailure, svgDataUrl, zoomable, type Problem } from "../../../shared/board.js";
+import { boardId, check, LANG, playgroundLink, renderFailure, svgDataUrl, zoomable, type Drawn, type Problem } from "../../../shared/board.js";
 import { boardElement, logLine, problemsElement, zoomStyleLinkElement } from "../../../shared/markup.js";
 
 export interface Options {
@@ -38,23 +38,23 @@ type Spec = NonNullable<CompileResult["spec"]>;
 // that can't start would otherwise be waited for forever).
 const RENDER_TIMEOUT = 60_000;
 
-let drawInWorker: ((spec: Spec, flows: boolean) => string) | undefined; // started on the first board
-const draw = (spec: Spec, flows: boolean): string =>
+let drawInWorker: ((spec: Spec, flows: boolean) => Drawn) | undefined; // started on the first board
+const draw = (spec: Spec, flows: boolean): Drawn =>
   (drawInWorker ??= createSyncFn(fileURLToPath(new URL("./worker.js", import.meta.url)), { timeout: RENDER_TIMEOUT }))(spec, flows);
 
 // Drawn boards by text, so a dev server re-rendering a page after an edit only draws the boards that changed
-const cache = new Map<string, string>();
+const cache = new Map<string, Drawn>();
 const CACHE_SIZE = 200;
 
-function svgFor(text: string, spec: Spec, flows: boolean): string {
+function drawnFor(text: string, spec: Spec, flows: boolean): Drawn {
   const key = (flows ? "1" : "0") + text;
-  let svg = cache.get(key);
-  if (svg === undefined) {
-    svg = draw(spec, flows);
+  let drawn = cache.get(key);
+  if (drawn === undefined) {
+    drawn = draw(spec, flows);
     if (cache.size >= CACHE_SIZE) cache.delete(cache.keys().next().value!);
   } else cache.delete(key); // most recently used goes last
-  cache.set(key, svg);
-  return svg;
+  cache.set(key, drawn);
+  return drawn;
 }
 
 // Per page (markdown-it's env): how many boards so far, for their ids, and whether the zoom styles are in
@@ -78,16 +78,16 @@ export default function markdownItTsquare(md: MarkdownIt, options: Options = {})
     const text = token.content.replace(/\n$/, ""); // as remark has it, so ids and links match
     const page = pageOf(env);
     const n = page ? page.boards++ : 0;
-    const checked = check(text, flows);
+    const checked = check(text);
     if (!checked.ok) return report(env, token.map, checked.problems, strict);
-    let svg: string;
+    let drawn: Drawn;
     try {
-      svg = svgFor(text, checked.spec, flows);
+      drawn = drawnFor(text, checked.spec, flows);
     } catch (err) {
       return report(env, token.map, [renderFailure(err)], strict);
     }
-    const zoomId = zoomable(checked.width, zoom) ? boardId(text, n) : null;
-    const figure = toHtml(boardElement({ ...checked, src: svgDataUrl(svg), zoomId, href: playgroundLink(text, link) }));
+    const zoomId = zoomable(drawn.width, zoom) ? boardId(text, n) : null;
+    const figure = toHtml(boardElement({ alt: checked.alt, width: drawn.width, height: drawn.height, screens: drawn.screens, src: svgDataUrl(drawn.svg), zoomId, href: playgroundLink(text, link) }));
     // the styles go with the page's first board that zooms (a fence can't add to the end of the page),
     // as a <link>: VitePress drops a page's <style>
     if (zoomId && page && !page.styled) {

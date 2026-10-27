@@ -3,7 +3,7 @@
  * stop it), with the same markup as tsquare's browser script (renderAll): a figure.tsquare-board
  * holding an <img>, or a div.tsquare-problems listing them by line. Bundled into each package.
  */
-import { boardLayout, compileWireframe, encodeWireframe, MAX_SHARED_TEXT, renderWireframeSvg, type CompileResult } from "tsquare";
+import { compileWireframe, encodeWireframe, MAX_SHARED_TEXT, measureBoardLayout, renderWireframeSvg, type CompileResult } from "tsquare";
 
 /** The code block language the plugins render. */
 export const LANG = "tsquare";
@@ -25,30 +25,44 @@ export interface Screen {
   height: number;
 }
 
-export type Checked =
-  | { ok: true; spec: Spec; width: number; height: number; alt: string; screens: Screen[] }
-  | { ok: false; problems: Problem[] };
+export type Checked = { ok: true; spec: Spec; alt: string } | { ok: false; problems: Problem[] };
 
-/** Compiles the text (synchronous and fast) and works out the image's size and alt text. */
-export function check(text: string, flows: boolean): Checked {
+/** Compiles the text (synchronous and fast): its problems, or the spec and the image's alt text. */
+export function check(text: string): Checked {
   const { spec, issues } = compileWireframe(text);
   if (!spec || issues.length) {
     return { ok: false, problems: issues.length ? issues.map((i) => ({ line: i.line, message: i.message })) : [{ message: "This isn't a wireframe." }] };
   }
-  const { width, height, items } = boardLayout(spec, { flows });
   const title = (spec.elements[spec.root]?.props as { title?: string } | undefined)?.title;
-  const screens = items.filter((i) => i.type === "Screen").map(({ name, x, y, width, height }) => ({ name, x, y, width, height }));
-  return { ok: true, spec, width, height, alt: title ? `Wireframe: ${title}` : "Wireframe", screens };
+  return { ok: true, spec, alt: title ? `Wireframe: ${title}` : "Wireframe" };
+}
+
+/** A drawn board: its SVG, and its size and screens as drawn (for the image and the viewer's screen buttons). */
+export interface Drawn {
+  svg: string;
+  width: number;
+  height: number;
+  screens: Screen[];
+}
+
+/**
+ * Draws a checked board. The size and screens come from tsquare's measureBoardLayout, which measures
+ * notes as drawn: boardLayout's estimate can be a line or more off (tsquare-js/tsquare#44).
+ */
+export async function draw(spec: Spec, flows: boolean): Promise<Drawn> {
+  const [svg, layout] = await Promise.all([renderWireframeSvg(spec, { skipValidation: true, flows }), measureBoardLayout(spec, { flows })]);
+  const screens = layout.items.filter((i) => i.type === "Screen").map(({ name, x, y, width, height }) => ({ name, x, y, width, height }));
+  return { svg, width: layout.width, height: layout.height, screens };
 }
 
 // Renders by text, so a dev server re-rendering a page after an edit only draws the boards that changed.
 // The promise goes in as soon as a render starts: Docusaurus compiles its client and server bundles
 // at the same time, and caching only finished renders drew every board twice.
-const cache = new Map<string, Promise<string>>();
+const cache = new Map<string, Promise<Drawn>>();
 const CACHE_SIZE = 200;
 
-/** The SVG of a checked board (the same promise while the same text is being drawn, or was before). */
-export function render(text: string, spec: Spec, flows: boolean): Promise<string> {
+/** A checked board, drawn (the same promise while the same text is being drawn, or was before). */
+export function render(text: string, spec: Spec, flows: boolean): Promise<Drawn> {
   const key = (flows ? "1" : "0") + text;
   const hit = cache.get(key);
   if (hit !== undefined) {
@@ -56,13 +70,13 @@ export function render(text: string, spec: Spec, flows: boolean): Promise<string
     cache.set(key, hit);
     return hit;
   }
-  const svg = renderWireframeSvg(spec, { skipValidation: true, flows });
-  cache.set(key, svg);
-  svg.catch(() => {
-    if (cache.get(key) === svg) cache.delete(key); // a failed render is tried again next time
+  const drawn = draw(spec, flows);
+  cache.set(key, drawn);
+  drawn.catch(() => {
+    if (cache.get(key) === drawn) cache.delete(key); // a failed render is tried again next time
   });
   if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value!);
-  return svg;
+  return drawn;
 }
 
 /**
