@@ -2,6 +2,10 @@
 
 The packages in this repo share one version number and are released together.
 
+## Unreleased
+
+- **The npm pages link to https://tsquare.dev/docs/markdown-plugins** (package.json `homepage`), each to its own section with setup for its frameworks. The source stays linked as the repository.
+
 ## 0.2.0
 
 - **Needs tsquare 0.13.2 or later** (it was 0.12.2). Boards get tsquare's renderer fixes from 0.12.3 to 0.13.2.
