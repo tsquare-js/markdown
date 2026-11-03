@@ -1,5 +1,8 @@
 # remark-tsquare
 
+[![CI](https://github.com/tsquare-js/markdown/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tsquare-js/markdown/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/remark-tsquare)](https://www.npmjs.com/package/remark-tsquare)
+
 A [remark](https://github.com/remarkjs/remark) plugin that turns ```` ```tsquare ```` code blocks into wireframe images when your site is built. [tsquare](https://tsquare.dev) is a plain-text language for UI wireframes: screens, components and notes, laid out on a board.
 
 ````markdown
