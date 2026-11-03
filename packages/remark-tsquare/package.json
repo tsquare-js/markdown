@@ -19,7 +19,7 @@
     "url": "git+https://github.com/tsquare-js/markdown.git",
     "directory": "packages/remark-tsquare"
   },
-  "homepage": "https://github.com/tsquare-js/markdown/tree/main/packages/remark-tsquare#readme",
+  "homepage": "https://tsquare.dev/docs/markdown-plugins#remark-tsquare",
   "bugs": {
     "url": "https://github.com/tsquare-js/markdown/issues"
   },

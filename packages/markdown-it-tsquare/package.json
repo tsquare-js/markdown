@@ -17,7 +17,7 @@
     "url": "git+https://github.com/tsquare-js/markdown.git",
     "directory": "packages/markdown-it-tsquare"
   },
-  "homepage": "https://github.com/tsquare-js/markdown/tree/main/packages/markdown-it-tsquare#readme",
+  "homepage": "https://tsquare.dev/docs/markdown-plugins#markdown-it-tsquare",
   "bugs": {
     "url": "https://github.com/tsquare-js/markdown/issues"
   },
