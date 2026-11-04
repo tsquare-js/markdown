@@ -1,6 +1,6 @@
 {
   "name": "rehype-tsquare",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "rehype plugin that turns tsquare code blocks into wireframe images at build time: Docusaurus, Astro, Starlight, Next.js with MDX, anything on unified.",
   "keywords": [
     "rehype",

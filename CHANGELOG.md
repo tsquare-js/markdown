@@ -2,7 +2,7 @@
 
 The packages in this repo share one version number and are released together.
 
-## Unreleased
+## 0.3.0
 
 - **New package: `rehype-tsquare`**, the same plugin on HTML instead of Markdown: it turns `<pre><code class="language-tsquare">` into boards, so it works wherever rehype plugins run (Docusaurus, Astro, Starlight, MDX, HTML pages). Same options and the same HTML as the other two. A syntax highlighter that runs first turns the blocks into plain code (Astro's does, unless `excludeLangs` has `"tsquare"`); the plugin notices (a code block in the page has exactly the text of a tsquare fence in its source) and warns with the setting to add (`strict` fails the build).
 - **Works with tsquare 0.14** as well as 0.13 (from 0.13.2), so a site on tsquare 0.14 shares one copy with the plugins.
