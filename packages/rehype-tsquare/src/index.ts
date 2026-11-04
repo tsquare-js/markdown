@@ -60,7 +60,7 @@ export default function rehypeTsquare(this: { data(key: string): unknown } | voi
     const found: Found[] = [];
     collect(tree, found);
     if (found.length === 0) {
-      missedBlocks(file, strict);
+      missedBlocks(tree, file, strict);
       return;
     }
     const blocks = found.map(blockOf);
@@ -127,38 +127,64 @@ function stylesParent(tree: Root): Parent {
 }
 
 /**
- * No blocks, but tsquare fences in the page's source: a highlighter got to them first (Astro's
- * Shiki or Prism, by default) and left plain code with no sign it was tsquare. Says how to fix it.
+ * No blocks, but the page has code blocks whose text is exactly a ```tsquare fence's from the source:
+ * a highlighter got to them first (Astro's Shiki or Prism, by default) and left plain code with no
+ * sign it was tsquare. Says how to fix it. Matching the text keeps out fences that are only shown
+ * inside another code block (an indented one, or a longer fence), whose code block holds the fence
+ * lines too.
  */
-function missedBlocks(file: VFile, strict: boolean) {
-  if (typeof file.value !== "string") return;
-  const fences = tsquareFences(file.value);
+function missedBlocks(tree: Root, file: VFile, strict: boolean) {
+  if (file.value === undefined) return;
+  const fences = tsquareFences(String(file)); // String(file) decodes a Uint8Array value as UTF-8
   if (fences.length === 0) return;
-  const blocks = fences.length === 1 ? "a ```tsquare block" : `${fences.length} \`\`\`tsquare blocks`;
+  const codes = new Set<string>();
+  eachPre(tree, (pre) => codes.add(normalize(textOf(pre))));
+  const missed = fences.filter((f) => f.text && codes.has(f.text));
+  if (missed.length === 0) return;
+  const blocks = missed.length === 1 ? "a ```tsquare block" : `${missed.length} \`\`\`tsquare blocks`;
   const reason =
-    `tsquare: this page has ${blocks}, but a syntax highlighter turned ${fences.length === 1 ? "it" : "them"} into plain code before rehype-tsquare ran. ` +
+    `tsquare: this page has ${blocks}, but a syntax highlighter turned ${missed.length === 1 ? "it" : "them"} into plain code before rehype-tsquare ran. ` +
     `In Astro, add syntaxHighlight: { type: "shiki", excludeLangs: ["tsquare"] } to the markdown config; elsewhere, put rehype-tsquare before the highlighter.`;
-  if (strict) file.fail(reason, { place: fences[0], ruleId: "highlighted-first", source: SOURCE });
-  warn(file, reason, fences[0], "highlighted-first", SOURCE);
+  if (strict) file.fail(reason, { place: missed[0], ruleId: "highlighted-first", source: SOURCE });
+  warn(file, reason, missed[0], "highlighted-first", SOURCE);
 }
 
+function eachPre(node: Parent, visit: (pre: Element) => void) {
+  for (const child of node.children) {
+    if (child.type === "element" && child.tagName === "pre") visit(child);
+    else if ("children" in child) eachPre(child as Parent, visit);
+  }
+}
+
+/** A code block's text without the indentation and blank edges that lists, quotes and highlighters change. */
+const normalize = (text: string) => text.split(/\r?\n/).map((line) => line.trim()).join("\n").trim();
+
 /**
- * Where the source's ```tsquare (or ~~~tsquare) fences open, skipping fences shown inside another
- * fence (a page that shows how to write one). Blockquote markers before a fence are allowed.
+ * The source's ```tsquare (or ~~~tsquare) fences: where each opens, and its text (normalized).
+ * A fence may follow blockquote markers and a list marker. Only a rough scan: missedBlocks compares
+ * its texts with the page's code blocks, so a fence it gets wrong only goes unreported.
  */
 function tsquareFences(source: string) {
-  const found: { line: number; column: number }[] = [];
-  let open: { char: string; length: number } | null = null;
-  source.split(/\r?\n/).forEach((raw, i) => {
-    const m = /^((?:[ \t]*>)*[ \t]*)(`{3,}|~{3,})(.*)$/.exec(raw);
-    if (!m) return;
-    const [, lead, marks, info] = m;
+  const found: { line: number; column: number; text: string }[] = [];
+  let open: { char: string; length: number; lines: string[] | null } | null = null;
+  const lines = source.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const m = /^((?:[ \t]*>)*[ \t]*(?:(?:[-+*]|\d{1,9}[.)])[ \t]+)?)(`{3,}|~{3,})(.*)$/.exec(raw);
     if (open) {
-      if (marks[0] === open.char && marks.length >= open.length && !info.trim()) open = null;
-      return;
+      if (m && m[2][0] === open.char && m[2].length >= open.length && !m[3].trim()) {
+        if (open.lines) found[found.length - 1].text = normalize(open.lines.join("\n"));
+        open = null;
+      } else open.lines?.push(raw.replace(/^(?:[ \t]*>)*/, ""));
+      continue;
     }
-    open = { char: marks[0], length: marks.length };
-    if (info.trim().split(/\s+/)[0] === LANG) found.push({ line: i + 1, column: lead.length + 1 });
-  });
+    if (!m) continue;
+    const [, lead, marks, info] = m;
+    const isTsquare = info.trim().split(/\s+/)[0] === LANG;
+    open = { char: marks[0], length: marks.length, lines: isTsquare ? [] : null };
+    if (isTsquare) found.push({ line: i + 1, column: lead.length + 1, text: "" });
+  }
+  // a fence still open at the end closes there
+  if (open?.lines) found[found.length - 1].text = normalize(open.lines.join("\n"));
   return found;
 }

@@ -125,6 +125,9 @@ test("a highlighter that ran first: a warning at the first fence that says how t
   assert.deepEqual([message.line, message.column, message.ruleId, message.source], [3, 3, "highlighted-first", "rehype-tsquare"]);
   assert.match(message.reason, /^tsquare: this page has 2 ```tsquare blocks, but a syntax highlighter turned them into plain code before rehype-tsquare ran\. In Astro, add syntaxHighlight: \{ type: "shiki", excludeLangs: \["tsquare"\] \}/);
   assert.match(String(warn.mock.calls[0].arguments[0]), /^page\.md:3:3: tsquare: this page has 2 /);
+  // the page as bytes (readFileSync without an encoding) is read the same way
+  const bytes = await processor.process(new VFile({ path: "page.md", value: new TextEncoder().encode(fence(signIn)) }));
+  assert.deepEqual(bytes.messages.map((m) => [m.line, m.ruleId]), [[1, "highlighted-first"]]);
   await assert.rejects(unified().use(remarkParse).use(remarkRehype).use(highlighter).use(rehypeTsquare, { strict: true }).use(rehypeStringify).process(fence(signIn)), /a syntax highlighter turned it into plain code/);
 });
 
@@ -132,7 +135,10 @@ test("no warning for a page that only shows a tsquare fence inside a longer one,
   const warn = t.mock.method(console, "warn", () => {});
   const processor = unified().use(remarkParse).use(remarkRehype).use(highlighter).use(rehypeTsquare).use(rehypeStringify);
   const shown = "How to write one:\n\n````markdown\n" + fence(signIn) + "````\n\n~~~\n```tsquare\n~~~\n";
-  for (const value of [shown, "# Nothing here\n", fence("x", "js")]) {
+  // an indented code block, and a longer fence in a list item, each showing a tsquare fence
+  const indented = "Example:\n\n" + fence(signIn).replace(/^(?=.)/gm, "    ");
+  const inList = "- Steps:\n\n  ````markdown\n" + fence(signIn).replace(/^(?=.)/gm, "  ") + "  ````\n";
+  for (const value of [shown, indented, inList, "# Nothing here\n", fence("x", "js")]) {
     const file = await processor.process(value);
     assert.deepEqual(file.messages, [], value);
   }
