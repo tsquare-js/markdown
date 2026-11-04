@@ -1,7 +1,7 @@
 {
   "name": "tsquare-markdown",
   "private": true,
-  "description": "Build-time plugins that turn ```tsquare code blocks into wireframe images: remark-tsquare and markdown-it-tsquare.",
+  "description": "Build-time plugins that turn ```tsquare code blocks into wireframe images: remark-tsquare, rehype-tsquare and markdown-it-tsquare.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -26,6 +26,7 @@
     "markdown-it": "14.1.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "rehype-parse": "^9.0.1",
     "rehype-stringify": "^10.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",

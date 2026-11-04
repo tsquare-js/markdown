@@ -17,7 +17,7 @@ board "Sign in"
 
 Each block becomes the board as an image, drawn on the machine that builds the site and placed inside the page: nothing is sent anywhere. Readers can open a wide board at full size, or in a viewer with zoom and pan (see [Zoom](#zoom)).
 
-Works with Docusaurus, Astro, MDX and anything else built on [unified](https://unifiedjs.com). For VitePress, Eleventy and other markdown-it sites, use [`markdown-it-tsquare`](https://github.com/tsquare-js/markdown/tree/main/packages/markdown-it-tsquare#readme).
+Works with Docusaurus, Astro, MDX and anything else built on [unified](https://unifiedjs.com). [`rehype-tsquare`](https://github.com/tsquare-js/markdown/tree/main/packages/rehype-tsquare#readme) makes the same boards from HTML instead, for pipelines where that fits better. For VitePress, Eleventy and other markdown-it sites, use [`markdown-it-tsquare`](https://github.com/tsquare-js/markdown/tree/main/packages/markdown-it-tsquare#readme).
 
 ## Install
 
